@@ -472,7 +472,7 @@ void renderGUI(void) {
                 if (isEmpty(board[r][c])) {
                     DrawCircle(posX + SQUARE_SIZE / 2, posY + SQUARE_SIZE / 2, 12, (Color){ 0, 0, 0, 45 });
                 } else {
-                    DrawCircleLines(posX + SQUARE_SIZE / 2, posY + SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 4, 6, (Color){ 230, 80, 80, 200 });
+                    DrawCircleLines(posX + SQUARE_SIZE / 2, posY + SQUARE_SIZE / 2, SQUARE_SIZE / 2 - 4, (Color){ 230, 80, 80, 200 });
                 }
             }
 
@@ -512,5 +512,104 @@ void renderGUI(void) {
 
     /* Player Cards */
     DrawRectangle(pX + 25, 110, 300, 55, (Color){ 35, 40, 52, 255 });
-    DrawText("WHITE PLAYER", pX + 
+    DrawText("WHITE PLAYER", pX + 35, 118, 14, RAYWHITE);
+    DrawText(p1.name, pX + 35, 136, 16, GOLD);
 
+    DrawRectangle(pX + 25, 175, 300, 55, (Color){ 35, 40, 52, 255 });
+    DrawText("BLACK PLAYER", pX + 35, 183, 14, RAYWHITE);
+    DrawText(p2.name, pX + 35, 201, 16, GOLD);
+
+    /* Game Status Bar */
+    DrawRectangle(pX + 25, 250, 300, 45, (Color){ 45, 52, 68, 255 });
+    DrawText(statusMessage, pX + 35, 264, 15, RAYWHITE);
+
+    /* Action Control Buttons */
+    int mouseX = GetMouseX();
+    int mouseY = GetMouseY();
+
+    Rectangle undoBtn = { pX + 25, 320, 140, 40 };
+    Rectangle saveBtn = { pX + 185, 320, 140, 40 };
+    Rectangle resetBtn = { pX + 25, 375, 300, 40 };
+
+    bool hoverUndo = CheckCollisionPointRec((Vector2){ mouseX, mouseY }, undoBtn);
+    bool hoverSave = CheckCollisionPointRec((Vector2){ mouseX, mouseY }, saveBtn);
+    bool hoverReset = CheckCollisionPointRec((Vector2){ mouseX, mouseY }, resetBtn);
+
+    DrawRectangleRec(undoBtn, hoverUndo ? (Color){ 70, 80, 105, 255 } : (Color){ 45, 52, 68, 255 });
+    DrawText("UNDO MOVE", pX + 50, 332, 14, RAYWHITE);
+
+    DrawRectangleRec(saveBtn, hoverSave ? (Color){ 70, 80, 105, 255 } : (Color){ 45, 52, 68, 255 });
+    DrawText("SAVE GAME", pX + 210, 332, 14, RAYWHITE);
+
+    DrawRectangleRec(resetBtn, hoverReset ? (Color){ 180, 60, 60, 255 } : (Color){ 140, 45, 45, 255 });
+    DrawText("RESET MATCH", pX + 120, 387, 14, RAYWHITE);
+
+    EndDrawing();
+}
+
+void handleMouseInput(void) {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        Vector2 mousePos = GetMousePosition();
+        int pX = 800;
+
+        /* Check Button Clicks */
+        Rectangle undoBtn = { pX + 25, 320, 140, 40 };
+        Rectangle saveBtn = { pX + 185, 320, 140, 40 };
+        Rectangle resetBtn = { pX + 25, 375, 300, 40 };
+
+        if (CheckCollisionPointRec(mousePos, undoBtn)) {
+            undoMove();
+            return;
+        }
+        if (CheckCollisionPointRec(mousePos, saveBtn)) {
+            saveGame();
+            return;
+        }
+        if (CheckCollisionPointRec(mousePos, resetBtn)) {
+            setupBoard();
+            return;
+        }
+
+        /* Board Click Coordinate Translation */
+        int col = (mousePos.x - BOARD_OFFSET_X) / SQUARE_SIZE;
+        int row = (mousePos.y - BOARD_OFFSET_Y) / SQUARE_SIZE;
+
+        if (row >= 0 && row < SIZE && col >= 0 && col < SIZE) {
+            if (selectedRow == -1) {
+                /* First Click: Select Piece */
+                char piece = board[row][col];
+                if (!isEmpty(piece) && ((whiteTurn && isWhite(piece)) || (!whiteTurn && isBlack(piece)))) {
+                    selectedRow = row;
+                    selectedCol = col;
+                }
+            } else {
+                /* Second Click: Execute Move or Change Selection */
+                if (isLegalMove(selectedRow, selectedCol, row, col, whiteTurn)) {
+                    makeMove(selectedRow, selectedCol, row, col);
+                    selectedRow = -1;
+                    selectedCol = -1;
+                } else if (!isEmpty(board[row][col]) && ((whiteTurn && isWhite(board[row][col])) || (!whiteTurn && isBlack(board[row][col])))) {
+                    selectedRow = row;
+                    selectedCol = col;
+                } else {
+                    selectedRow = -1;
+                    selectedCol = -1;
+                }
+            }
+        }
+    }
+}
+
+void initGameApp(void) {
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "C Chess Engine - Raylib GUI");
+    SetTargetFPS(60);
+
+    setupBoard();
+
+    while (!WindowShouldClose()) {
+        handleMouseInput();
+        renderGUI();
+    }
+
+    CloseWindow();
+}

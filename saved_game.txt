@@ -1,0 +1,13 @@
+Player 1
+P1-001
+Player 2
+P2-002
+0
+rnbqkbnr
+ppppp..p
+........
+.....ppQ
+....P...
+........
+PPPP.PPP
+RNB.KBNR
